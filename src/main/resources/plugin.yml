@@ -3,6 +3,7 @@ main: me.spikey.blockregen.Main
 name: SpikeyBlockRegen
 version: 1.0
 api-version: 1.13
+author: SpikeyNoob
 
 depend:
   - WorldGuard
