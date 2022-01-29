@@ -1,0 +1,5 @@
+#In seconds!
+blockDelay: 10
+
+#In game ticks (20 per second; use larger numbers to decrease lag)
+timebetweenchecks: 60
