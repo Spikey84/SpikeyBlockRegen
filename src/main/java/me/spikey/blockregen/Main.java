@@ -99,7 +99,7 @@ public class Main extends JavaPlugin implements Listener {
         if (event.getPlayer().hasPermission("blockregen.bypass")) return;
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
         RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(event.getPlayer().getLocation()));
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(event.getBlock().getLocation()));
 
         ProtectedRegion highPR = null;
         for (ProtectedRegion region : set.getRegions()) {
@@ -129,6 +129,11 @@ public class Main extends JavaPlugin implements Listener {
 
         if (!(highPR.getFlags().get(blockRegen) == StateFlag.State.ALLOW)) return;
 
+        if (event.getBlock().getType().equals(Material.PISTON) || event.getBlock().getType().equals(Material.PISTON_HEAD)){
+            event.setCancelled(true);
+            return;
+        }
+
         for (BlockRegenTask regenTask : Lists.newCopyOnWriteArrayList(blockRegenTasks)) {
             if (event.getBlock().getLocation().equals(regenTask.getLocation())) {
                 if (event.getPlayer().hasPermission("blockregen.bypass")) {
@@ -144,13 +149,13 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void blockExplode(EntityExplodeEvent event) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionQuery query = container.createQuery();
+    public void entityExplode(EntityExplodeEvent event) {
 
         for (Block block : event.blockList()) {
             if (block.getType().equals(Material.AIR)) continue;
 
+            RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+            RegionQuery query = container.createQuery();
             ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(block.getLocation()));
 
             ProtectedRegion highPR = null;
@@ -164,6 +169,48 @@ public class Main extends JavaPlugin implements Listener {
 
             blockRegenTasks.add(new BlockRegenTask(block.getLocation(), block.getType(), timeDelay));
         }
+    }
+
+    @EventHandler
+    public void blockExplode(BlockExplodeEvent event) {
+        Bukkit.getLogger().info("Block explode");
+        for (Block block : event.blockList()) {
+            if (block.getType().equals(Material.AIR)) continue;
+
+            RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+            RegionQuery query = container.createQuery();
+            ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(block.getLocation()));
+
+            ProtectedRegion highPR = null;
+            for (ProtectedRegion region : set.getRegions()) {
+                if (highPR == null || region.getPriority() > highPR.getPriority()) highPR = region;
+            }
+
+            if (highPR == null) return;
+
+            if (!(highPR.getFlags().get(blockRegen) == StateFlag.State.ALLOW)) return;
+
+            blockRegenTasks.add(new BlockRegenTask(block.getLocation(), block.getType(), timeDelay));
+        }
+    }
+
+    @EventHandler
+    public void blockPiston(BlockPistonExtendEvent event) {
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(event.getBlock().getLocation()));
+
+        ProtectedRegion highPR = null;
+        for (ProtectedRegion region : set.getRegions()) {
+            if (highPR == null || region.getPriority() > highPR.getPriority()) highPR = region;
+        }
+
+        if (highPR == null) return;
+
+        if (!(highPR.getFlags().get(blockRegen) == StateFlag.State.ALLOW)) return;
+
+        event.setCancelled(true);
     }
 
 }
